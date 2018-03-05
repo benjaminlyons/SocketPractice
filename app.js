@@ -1,33 +1,29 @@
-var http = require('http');
+var app = require('express')();
+var server = require('http').createServer(app);
+var io = require('socket.io').listen(server);
+var ent = require('ent'); //blocks html characters
 var fs = require('fs');
 
-//loading the index file .html displayed to the client
-var server = http.createServer(function(req, res){
-	fs.readFile('./index.html', 'utf-8', function(error, content){
-		res.writeHead(200, {"Content-Type": "text/html"});
-		res.end(content);
-	});
+//loading the page
+app.get('/', function(req, res){
+	res.sendFile(__dirname + '/index.html');
 });
 
-//loading socket.io
-var io = require('socket.io').listen(server);
-
-//when client connects, log it in the console
-io.sockets.on('connection', function(socket){
-
-	//wait for client to send message to the server
-	socket.on('newmessage', function(message){
-		console.log(socket.username + ' is sending a new message: ' + message);
-		socket.broadcast.emit('newmessage', {username: socket.username, message: message});
-	});
-
-	//wait for client username
+io.sockets.on('connection', function(socket, username){
+	//when username is received it is stored as a session variable
 	socket.on('newuser', function(username){
+		username = ent.encode(username);
 		socket.username = username;
-		console.log(socket.username + ' is now connected');
-		socket.broadcast.emit('newuser', socket.username);
+		socket.broadcast.emit('newuser', username);
+		console.log(username + ' has joined the chat');
+	});
+
+	//when message is received the client's username is retrieved
+	socket.on('message', function(message){
+		message = ent.encode(message);
+		socket.broadcast.emit('message', {username: socket.username, 
+message: message});
 	});
 });
-
 
 server.listen(8080);
