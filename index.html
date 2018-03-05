@@ -5,23 +5,45 @@
 	</head>
 
 	<body>
-		<h1>Communication with socket.io!</h1>
+		<h1>Super Chat!</h1>
 		
-		<p><input type="button" value="Poke the server" id="poke" /> </p>
+		<input type="text" name="message" id="message" value="Type message here....."/>
+		<input type="submit" value="Send Message" id="submitButton"/>
+		
+
+		<div name="MessageDiv" id = "messageDiv">
+		</div>
+
 
 		<script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
 		<script src="/socket.io/socket.io.js"></script>
 		<script>
+			//connect to server
 			var socket = io.connect('http://localhost:8080');
-			socket.on('message', function(message){
-				alert('The server has a message for you: ' + message);
-			});
-
+			
+			//get username and send it to the server
 			var username = prompt('What\'s your username?');
 			socket.emit('newuser', username);
 			
-			$('#poke').click(function(){
-				socket.emit('message', 'Hi how are you feeling?');
+			//when message is sent
+			$('#submitButton').click(function(){
+				socket.emit('newmessage', $('#message').val());
+								
+				//have to write message on own screen
+				$('div').prepend("<p>" + 'ME: ' + $('#message').val() + "</p>");
+				
+				//clear text box
+				$('#message').val('');
+			});
+
+			//wait to receive new messages
+			socket.on('newmessage', function(message){
+				$("div").prepend("<p>" + message.username + ': ' + message.message + "</p");
+			});
+
+			//wait to receive new user message
+			socket.on('newuser', function(username){
+				$("div").prepend("<p><i>" + username + " has joined the chat! </i></p>");
 			});
 		</script>
 	</body>
